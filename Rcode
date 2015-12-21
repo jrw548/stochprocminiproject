@@ -1,3 +1,9 @@
+install.packages("expm")
+library(expm)             #need 'expm' package to use %^% matrix exponentiation function
+
+#per-period discount rate for simulations
+d <- 0.03
+
 #Define transition matrix for simple 5-state example
 P <- matrix(c(0.3, 0.7, 0, 0, 0,
               0.2, 0, 0.8, 0, 0,
@@ -13,6 +19,19 @@ rownames(P) <- c('1','2','3','4','5')
 nc <- 40
 m <- 4
 R1 <- matrix(c(nc-m, -m, -m, -m, 0), byrow=TRUE)
+
+#Calculate expected present value
+g <- matrix(rep(0,60),
+            ncol=12, byrow=TRUE) #matrix of zeroes
+
+for (i in 1:12){
+  g[,i] <- (1/(1+d) * P) %^% (i-1) %*% R1 #store each term in the sum from the paper as a vector
+}
+
+epr <- rowSums(g)[1] #sum each row and pick out first entry. It is the expected present value required
+
+#infinite horizon expected lifetime value
+eprinf <- (solve(diag(5) - (1/(1+d) * P)) %*% R1)[1]
 
 #Define transition matrix for example where transition matrix and reward structure depend on recency
 Q <- matrix(c(0.3, 0, 0, 0, 0.7, 0, 0, 0,
@@ -32,8 +51,18 @@ rownames(Q) <- c('1','2','3','4','5','6','7','8')
 nc11 <- 40; nc12 <- 38; nc13 <- 36; nc14 <- 34; m11 <- 4; m12 <- 2; m13 <- 2; m14 <- 2; m2 <- 4; m3 <- 3; m4 <- 2 
 R <- matrix(c(nc11-m11, nc12-m12, nc13-m13, nc14-m14, -m2, -m3, -m4, 0), byrow=TRUE)
 
-#per-period discount rate for simulating
-d <- 0.03
+#Calculate expected present value
+h <- matrix(rep(0,96),
+            ncol=12, byrow=TRUE) #matrix of zeroes
+
+for (i in 1:12){
+  h[,i] <- (1/(1+d) * Q) %^% (i-1) %*% R #store each term in the sum from the paper as a vector
+}
+
+epr2 <- rowSums(h)[1] #sum each row and pick out first entry. It is the expected present value required
+
+#infinite horizon expected lifetime value
+eprinf2 <- (solve(diag(8) - (1/(1+d) * Q)) %*% R)[1]
 
 #function to simulate a sample path and reward from the simple example
 #outputs vector and graph of sample path, and vector and plot of cumulative reward for the company, 

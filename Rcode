@@ -1,0 +1,158 @@
+#Define transition matrix for simple 5-state example
+P <- matrix(c(0.3, 0.7, 0, 0, 0,
+              0.2, 0, 0.8, 0, 0,
+              0.15, 0, 0, 0.85, 0,
+              0.05, 0, 0, 0, 0.95,
+              0, 0, 0, 0, 1),
+            ncol=5, byrow=TRUE)
+
+colnames(P) <- c('1','2','3','4','5') #these two lines are required for the path function
+rownames(P) <- c('1','2','3','4','5')
+
+#Define corresponding reward structure
+nc <- 40
+m <- 4
+R1 <- matrix(c(nc-m, -m, -m, -m, 0), byrow=TRUE)
+
+#Define transition matrix for example where transition matrix and reward structure depend on recency
+Q <- matrix(c(0.3, 0, 0, 0, 0.7, 0, 0, 0,
+              0.25, 0, 0, 0, 0.75, 0, 0, 0,
+              0.2, 0, 0, 0, 0.8, 0, 0, 0,
+              0.15, 0, 0, 0, 0.85, 0, 0, 0,
+              0, 0.2, 0, 0, 0, 0.8, 0, 0,
+              0, 0, 0.15, 0, 0, 0, 0.85, 0,
+              0, 0, 0, 0.05, 0, 0, 0, 0.95,
+              0, 0, 0, 0, 0, 0, 0, 1),
+            ncol=8, byrow=TRUE)
+
+colnames(Q) <- c('1','2','3','4','5','6','7','8') #these two lines are required for the path2 function
+rownames(Q) <- c('1','2','3','4','5','6','7','8') 
+
+#Define corresponding reward structure
+nc11 <- 40; nc12 <- 38; nc13 <- 36; nc14 <- 34; m11 <- 4; m12 <- 2; m13 <- 2; m14 <- 2; m2 <- 4; m3 <- 3; m4 <- 2 
+R <- matrix(c(nc11-m11, nc12-m12, nc13-m13, nc14-m14, -m2, -m3, -m4, 0), byrow=TRUE)
+
+#per-period discount rate for simulating
+d <- 0.03
+
+#function to simulate a sample path and reward from the simple example
+#outputs vector and graph of sample path, and vector and plot of cumulative reward for the company, 
+path <- function(P,N,nc,m) {
+  transition <- function(char,P) {      #function 'transition'
+    sample(colnames(P),1,prob=P[char,]) #takes single sample from the column names of P with probability mass function 
+                                        #given by the entries of the row with the name 'char'.
+  }       
+  
+  sim <- character(N) #empty character vector of length N
+  sim[1] <- '1' #start at state 1
+  for (i in 2:N) {
+    sim[i] <- transition(sim[i-1],P) #find next step in path, up to Nth step, and place in spot i in the vector
+  }
+  
+  reward <- rep(0,N) #vector of zeroes of length N
+  reward[1] <- nc-m #take first entry to be that of a new customer purchasing at step 0
+  for (i in 2:N) {
+    if (sim[i] == '1') {
+      reward[i] <- reward[i-1] + (nc - m)*1/(1+d)^(i-1) #update reward vector with rewards corresponding to the 
+                                                        #states given in the sample path
+    }
+    else if (sim[i] == '5') {
+      reward[i] <- reward[i-1]
+    }
+    else {
+      reward[i] <- reward[i-1] - m*1/(1+d)^(i-1)
+    }
+  }
+  
+  #plot the reward and sample path on separate graphs
+  rewardplot <- plot(reward, main="Reward from a Customer under Strategy 1", xlab="Week", ylab="Reward ($)", type='b')
+  simplot <- plot(sim, main="A Sample Path for Strategy 1", xlab="Week", ylab="State", type='b')
+  
+  #output vector and graph of sample path, and vector and plot of cumulative reward for the company
+  list(sim, reward, rewardplot, simplot)
+}
+
+#function to simulate sample path and reward for example where transition matrix and reward structure depend on recency
+path2 <- function(Q,N,R) {               #takes input of reward vector itself now, to make the reward code simpler
+  transition <- function(char,Q) {
+    sample(colnames(Q),1,prob=Q[char,]) #same as in path function above
+  }
+  
+  sim <- character(N) #possible states are '1' up to '8' rather than '1_1'... so that the transition function doesn't return error
+  sim[1] <- '1'       #y axis labels are replaced with proper states later on
+  for (i in 2:N) {
+    sim[i] <- transition(sim[i-1],Q)
+  }
+  
+  reward <- rep(0,N)
+  reward[1] <- nc11-m11
+  for (i in 2:N) {
+    if (sim[i] == '1') {
+      reward[i] <- reward[i-1] + R[1]*1/(1+d)^(i-1)
+    }
+    else if (sim[i] == '2') {
+      reward[i] <- reward[i-1] + R[2]*1/(1+d)^(i-1)
+    }
+    else if (sim[i] == '3') {
+      reward[i] <- reward[i-1] + R[3]*1/(1+d)^(i-1)
+    }
+    else if (sim[i] == '4') {
+      reward[i] <- reward[i-1] + R[4]*1/(1+d)^(i-1)
+    }
+    else if (sim[i] == '5') {
+      reward[i] <- reward[i-1] + R[5]*1/(1+d)^(i-1)
+    }
+    else if (sim[i] == '6') {
+      reward[i] <- reward[i-1] + R[6]*1/(1+d)^(i-1)
+    }
+    else if (sim[i] == '7') {
+      reward[i] <- reward[i-1] + R[7]*1/(1+d)^(i-1)
+    }
+    else {
+      reward[i] <- reward[i-1]
+    }
+  }
+  
+  rewardplot <- plot(reward, main="Reward from a Customer under Strategy 2", xlab="Week", ylab="Reward ($)", type='b')
+  simplot <- plot(sim, main="A Sample Path for Strategy 2", xlab="Week", ylab="State", yaxt="n", type='b')
+  axis(2, at=1:8, labels=c('1_1','1_2','1_3','1_4','2','3','4','5'))
+  #line above replaces the labels on the simplot graph to be the states given in the example in the paper
+  
+  list(sim, reward, rewardplot, simplot) #same output as path function
+}
+
+#the code below simulates 1000 sample paths and their corresponding reward vectors over 12 weeks, for each strategy in turn
+
+j <- 1000
+N <- 12
+
+u <- matrix(rep(0,j*N), nrow=j) #j x N matrices full of zeroes
+v <- matrix(rep(0,j*N), nrow=j) #ith column corresponds to ith week in simulations
+
+for (i in 1:j){
+  out <- path(P,N,nc,m) #simpler strategy (5 states)
+  u[i,] <- out[[2]] #ith row of matrix replaced by reward vector from path function
+}
+
+a <- rep(0,N) #vector of zeroes of length N
+for (i in 1:N){
+  a[i] <- mean(u[,i]) #calculate mean reward for each week by averaging each column of matrix u and placing results in vector a
+}
+
+
+for (i in 1:j){
+  out <- path2(Q,N,R) #slightly more complicated strategy (8 states, structure depends on recency)
+  v[i,] <- out[[2]] 
+}
+
+b <- rep(0,N) #vector of zeroes of length N
+for (i in 1:N){
+  b[i] <- mean(v[,i]) #calculate mean reward for each week by averaging each column of matrix v and placing results in vector b
+}
+
+#plot graph of the vector a and b, with y limits from minimum to maximum of the values in the vectors.
+#line for simpler strategy is red, other strategy is blue.
+
+plot(a, ylim=c(min(c(a,b)),max(c(a,b))), main="Average Reward Week-By-Week for 2 Strategies", 
+     xlab="Week", ylab="Average Reward ($)", type="l", col="red")
+lines(b, col="blue")

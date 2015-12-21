@@ -150,7 +150,7 @@ for (i in 1:N){
   b[i] <- mean(v[,i]) #calculate mean reward for each week by averaging each column of matrix v and placing results in vector b
 }
 
-#plot graph of the vector a and b, with y limits from minimum to maximum of the values in the vectors.
+#plot graph of the vectors a and b, with y limits from minimum to maximum of the values in the vectors.
 #line for simpler strategy is red, other strategy is blue.
 
 plot(a, ylim=c(min(c(a,b)),max(c(a,b))), main="Average Reward Week-By-Week for 2 Strategies", 
